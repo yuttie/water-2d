@@ -9,6 +9,9 @@
 
 
 /* <<< Changelog >>>
+ * >>> Mon, 02 Aug 2004 21:11:01 +0900 <<<
+ * New:  波紋の大きさを+-キーで動的に変えることが出来るようにした。
+ * 
  * >>> 2004/07/22 00:08:50 <<<
  * Src:  計算部分のアルゴリズムにn/32768倍アルゴリズムを選択し、(2^n-1)/2^n倍アルゴリズムを削除した。
  * New:  減衰率を変更する起動時オプションを追加した。
@@ -56,6 +59,10 @@
  * Info: 「屈折によるずれ」の計算をきちんと行い、キャッシュ化しておくことにした。
  * Info: フレネル反射を実装したが、上方から当たる白い光の反射を計算するだけなので、
  *       それほど綺麗では無く、むしろ無い方が良いと判断したので、削除した。
+ */
+
+
+/* <<< What I'm Doing >>>
  */
 
 
@@ -111,12 +118,13 @@ typedef struct __ProgConfig
     char  *pBgImgPath;      // 背景イメージのファイル名
     int    depthRes;        // 深さの解像度
     int    riplRadius;      // 発生させる波紋の半径
-    int    riplDepth;       // 発生させる波紋の最大の深さ
+    double riplDepth;       // 発生させる波紋の最大深さ
     int    widthRes;        // シミュレートする水面の幅の解像度
     int    heightRes;       // シミュレートする水面の高さの解像度
     int    wndWidth;        // ウィンドウの幅
     int    wndHeight;       // ウィンドウの高さ
     double attRate;         // 減衰率
+    double scale;
     int    csrIPDiv;        // カーソルの補間を何分割で行うか
     bool   isFullScreen;    // フルスクリーンか否か
 } ProgConfig;
@@ -159,9 +167,10 @@ const char const *MSG_HELP =
     "    -h                : Show this help.\n"
     "    -f                : Use full-screen mode.\n"
     "    -aR(=0.99)        : Set rate of attenuation as R(0 < R < 1).\n"
+    "    -bN(=20.0)        : Set depth of base ripple as N.\n"
     "    -rN(=8)           : Set ripple radius as N.\n"
     "    -dN(=1)           : Set number of interpolating division as N(0 < N).\n"
-    "    -bF(=bgimage.bmp) : Use F as background image.\n"
+    "    -iF(=bgimage.bmp) : Use F as background image.\n"
     "    -sWxH(=256x192)   : Simulate water of the size of WxH.\n"
     "    -mN(=512)         : Use N KByte cache. Affect '-p' option.\n"
     "    -pN(=512)         : Set depth resolution as N. Affect '-m' option.\n";
@@ -172,7 +181,7 @@ ProgConfig   g_Conf;         // プログラムの設定
 PosData     *g_pNextData;    // 次の水面データ
 PosData     *g_pCrntData;    // 今の水面データ
 PosData     *g_pPrevData;    // 前の水面データ
-PosData     *g_pRiplData;    // 波紋データ
+PosData     *g_pRiplData;    // 現在の波紋データへのポインタ
 Uint16      *g_pRfraTbl;     // 屈折による変移量テーブル
 SDL_Surface *g_pScreen;      // スクリーンサーフェス
 SDL_Surface *g_pBgImage;     // 背景サーフェス
@@ -236,13 +245,14 @@ void InitProc(int argc, char **argv)
     // プログラムオプションのデフォルト値を設定
     g_Conf.pBgImgPath = "bgimage.bmp";
     g_Conf.depthRes = 512;
-    g_Conf.riplRadius = 8;
-    g_Conf.riplDepth = (g_Conf.depthRes - 1) / 2;
+    g_Conf.riplRadius = 5;
+    g_Conf.riplDepth = 20.0;
     g_Conf.widthRes = 256;
     g_Conf.heightRes = 192;
     g_Conf.wndWidth = g_Conf.widthRes;
     g_Conf.wndHeight = g_Conf.heightRes;
     g_Conf.attRate = 0.99;
+    g_Conf.scale = g_Conf.depthRes / 200.0;
     g_Conf.csrIPDiv = 1;
     g_Conf.isFullScreen = false;
     
@@ -253,7 +263,7 @@ void InitProc(int argc, char **argv)
         printf("BgImagePath : %s\n", g_Conf.pBgImgPath);
         printf("DepthResolution : %d\n", g_Conf.depthRes);
         printf("RippleRadius : %d\n", g_Conf.riplRadius);
-        printf("RippleDepth : %d\n", g_Conf.riplDepth);
+        printf("RippleDepth : %f\n", g_Conf.riplDepth);
         printf("WidthResolution : %d\n", g_Conf.widthRes);
         printf("HeightResolution : %d\n", g_Conf.heightRes);
         printf("WindowWidth : %d\n", g_Conf.wndWidth);
@@ -331,6 +341,22 @@ bool EventProc()
             case SDLK_q:
                 // 終了キー(ESC, Q)
                 exitFlag = true;
+                break;
+            case SDLK_KP_PLUS:
+            case SDLK_PLUS:
+                // +キー
+                g_Conf.riplRadius += 4;
+                if (g_Conf.riplRadius < 0) g_Conf.riplRadius = 0;
+                free(g_pRiplData);
+                g_pRiplData = CreateRippleData();
+                break;
+            case SDLK_KP_MINUS:
+            case SDLK_MINUS:
+                // -キー
+                g_Conf.riplRadius -= 4;
+                if (g_Conf.riplRadius < 0) g_Conf.riplRadius = 0;
+                free(g_pRiplData);
+                g_pRiplData = CreateRippleData();
                 break;
             default:
                 // その他のキー(ハンドルされないキー)
@@ -425,9 +451,14 @@ bool ParseArgument(int argc, char **argv)
                 g_Conf.isFullScreen = true;
                 break;
             case 'a':
-                // 波紋の大きさを取得
+                // 波紋の減衰率を取得
                 if (argv[i][2] == '\0') g_Conf.attRate = atof(&argv[++i][0]);
                 else                    g_Conf.attRate = atof(&argv[i][2]);
+                break;
+            case 'b':
+                // 一倍の波紋の最大の深さ
+                if (argv[i][2] == '\0') g_Conf.riplDepth = atof(&argv[++i][0]);
+                else                    g_Conf.riplDepth = atof(&argv[i][2]);
                 break;
             case 'r':
                 // 波紋の大きさを取得
@@ -439,7 +470,7 @@ bool ParseArgument(int argc, char **argv)
                 if (argv[i][2] == '\0') g_Conf.csrIPDiv = atoi(&argv[++i][0]);
                 else                    g_Conf.csrIPDiv = atoi(&argv[i][2]);
                 break;
-            case 'b':
+            case 'i':
                 // 背景のファイル名を取得
                 if (argv[i][2] == '\0') g_Conf.pBgImgPath = &argv[++i][0];
                 else                    g_Conf.pBgImgPath = &argv[i][2];
@@ -488,7 +519,7 @@ bool ParseArgument(int argc, char **argv)
 //                    printf("%d\n", g_Conf.depthRes);
                 
                 // 波紋の高さを再計算
-                g_Conf.riplDepth = (g_Conf.depthRes - 1) / 2;
+                //g_Conf.riplDepth = (g_Conf.depthRes - 1) / 2;
                 
                 break;
             }
@@ -503,7 +534,7 @@ bool ParseArgument(int argc, char **argv)
                     g_Conf.depthRes = MAX_RESOLUTION;
                 
                 // 波紋の高さを再計算
-                g_Conf.riplDepth = (g_Conf.depthRes - 1) / 2;
+                //g_Conf.riplDepth = (g_Conf.depthRes - 1) / 2;
                 
                 break;
             default:
@@ -573,7 +604,7 @@ PosData *CreateRippleData()
             if (r2 < radius * radius)
             {   // 円内
                 double t = PI * (sqrt(r2) / radius);
-                *pData = (PosData)((cos(t) + 1) * g_Conf.riplDepth / 2);
+                *pData = (PosData)((cos(t) + 1) * (g_Conf.depthRes / 2) * (g_Conf.riplDepth / 100.0) * (g_Conf.riplRadius / 8.0) / 2);
             }
             else
             {   // 円外
@@ -589,6 +620,7 @@ PosData *CreateRippleData()
 /* 屈折テーブル作成関数 */
 Uint16 *CreateRefractionTable()
 {
+/*
     // 512をデフォルトの分解能とすると、
     // 縦方向の分解能がp倍になると、波紋の高さもp倍になる
     // ここでピクセルの幅をp倍にしないと、p倍縦長の波紋になってしまう。
@@ -604,8 +636,8 @@ Uint16 *CreateRefractionTable()
     // このまま計算すると、q倍のスケールで計算した事になる。
     // よって、算出したずれを1/q倍する。
     const double q = g_Conf.riplRadius / 8.0;
-    
-    const double PIXEL_WIDTH = 64.0 * p;     // ピクセルの幅
+*/    
+    const double PIXEL_WIDTH = 1.0;     // ピクセルの幅
     const double REFRACTION_INDEX = 1.33;    // 水の絶対屈折率
 
     // テーブル用メモリを確保(メモリ使用量≒g_Conf.depthRes^2 * 2byte(16bit))
@@ -618,18 +650,18 @@ Uint16 *CreateRefractionTable()
     for (int heightDiff = 0; heightDiff < g_Conf.depthRes; heightDiff++)
     {
         // 入射角を求める
-        double t1 = atan(q * heightDiff / (2 * PIXEL_WIDTH));
+        double t1 = atan((heightDiff * 100.0 / (g_Conf.depthRes / 2.0)) / (2.0 * PIXEL_WIDTH));
         
         // 屈折角を求める
         double t2 = asin(sin(t1) / REFRACTION_INDEX);
         
         // 各水面の高さに応じたずれの量を求める
         // ずれは、水面の高さと、そのピクセルの左右または上下の高低差に影響される
-        for (int heightRes = 0; heightRes < g_Conf.depthRes; heightRes++)
+        for (int height = 0; height < g_Conf.depthRes; height++)
         {
-            int index = g_Conf.depthRes * heightDiff + heightRes;
-            double delta = q * heightRes * tan(t1 - t2);
-            refractionTable[index] = (Uint16)(delta / p / q);
+            int index = g_Conf.depthRes * heightDiff + height;
+            double delta = (height * 100.0 / (g_Conf.depthRes / 2.0)) * tan(t1 - t2);
+            refractionTable[index] = (Uint16)(delta);
         }
         if (i < heightDiff)
         {
