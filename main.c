@@ -9,9 +9,14 @@
 
 
 /* <<< Changelog >>>
+ * >>> 2004/07/22 00:08:50 <<<
+ * Src:  計算部分のアルゴリズムにn/32768倍アルゴリズムを選択し、(2^n-1)/2^n倍アルゴリズムを削除した。
+ * New:  減衰率を変更する起動時オプションを追加した。
+ * 
  * >>> 2004/07/21 16:03:00 <<<
  * Fix:  水面を静める演算の割算部分で切捨てを行うように変更し、完全に波が静まるように修正した。
  * Src:  あちこちに有るメッセージをconst定数化して一ヵ所でまとめて定義する様にした。
+ * New:  ESCキーでも終了できるようにした。
  * Src:  CPUID、MMX、SSE、SSE2命令の存在チェック関数を実装した。
  * 
  * <<< 2004/03/27 12:10:05 >>>
@@ -19,7 +24,7 @@
  * Src:  main関数をすっきりさせた。
  * New:  フルスクリーンモードでの実行を指定する起動時オプションを追加した。
  * Fix:  屈折テーブルの使用するメモリ量を1/8で済むように修正。
- * New:  背景画像から幅と高さを決めていたのを止め、自由に指定できる起動時オプションを追加した。
+ * New:  背景画像から幅と高さを決めていたのを止め、自由に大きさを指定できる起動時オプションを追加した。
  * New:  自動的に指定された背景画像のサイズを、ウィンドウのサイズにリサイズするようにした。
  * New:  ドラッグ時に行う補間の分割数を指定する起動時オプションを追加した。
  * Fix:  水面の高さの解像度を変えると、屈折がおかしくなるのを修正。
@@ -103,16 +108,17 @@
 typedef Sint16 PosData;
 typedef struct __ProgConfig
 {
-    char *pBgImgPath;      // 背景イメージのファイル名
-    int   depthRes;        // 深さの解像度
-    int   riplRadius;      // 発生させる波紋の半径
-    int   riplDepth;       // 発生させる波紋の最大の深さ
-    int   widthRes;        // シミュレートする水面の幅の解像度
-    int   heightRes;       // シミュレートする水面の高さの解像度
-    int   wndWidth;        // ウィンドウの幅
-    int   wndHeight;       // ウィンドウの高さ
-    int   csrIPDiv;        // カーソルの補間を何分割で行うか
-    bool  isFullScreen;    // フルスクリーンか否か
+    char  *pBgImgPath;      // 背景イメージのファイル名
+    int    depthRes;        // 深さの解像度
+    int    riplRadius;      // 発生させる波紋の半径
+    int    riplDepth;       // 発生させる波紋の最大の深さ
+    int    widthRes;        // シミュレートする水面の幅の解像度
+    int    heightRes;       // シミュレートする水面の高さの解像度
+    int    wndWidth;        // ウィンドウの幅
+    int    wndHeight;       // ウィンドウの高さ
+    double attRate;         // 減衰率
+    int    csrIPDiv;        // カーソルの補間を何分割で行うか
+    bool   isFullScreen;    // フルスクリーンか否か
 } ProgConfig;
 
 
@@ -152,16 +158,17 @@ const char const *MSG_HELP =
     "    ** '-rN' is equal to '-r N'\n"
     "    -h                : Show this help.\n"
     "    -f                : Use full-screen mode.\n"
+    "    -aR(=0.99)        : Set rate of attenuation as R(0 < R < 1).\n"
     "    -rN(=8)           : Set ripple radius as N.\n"
-    "    -dN(=1)           : Set number of interpolating division as N.\n"
+    "    -dN(=1)           : Set number of interpolating division as N(0 < N).\n"
     "    -bF(=bgimage.bmp) : Use F as background image.\n"
     "    -sWxH(=256x192)   : Simulate water of the size of WxH.\n"
-    "    -mN(=512)         : Use N KByte cache.\n"
-    "    -pN(=512)         : Set depth resolution as N.\n";
+    "    -mN(=512)         : Use N KByte cache. Affect '-p' option.\n"
+    "    -pN(=512)         : Set depth resolution as N. Affect '-m' option.\n";
 
 
 /* Global Variable */
-ProgConfig   g_Conf;       // プログラムの設定
+ProgConfig   g_Conf;         // プログラムの設定
 PosData     *g_pNextData;    // 次の水面データ
 PosData     *g_pCrntData;    // 今の水面データ
 PosData     *g_pPrevData;    // 前の水面データ
@@ -192,8 +199,10 @@ int main(int argc, char **argv)
         SDL_UpdateRect(g_pScreen, 0, 0, 0, 0);
         
         // 水面データを入れ替える
-        PosData *tmp = g_pPrevData;    g_pPrevData = g_pCrntData;
-        g_pCrntData = g_pNextData;     g_pNextData = tmp;
+        PosData *tmp = g_pPrevData;
+        g_pPrevData = g_pCrntData;
+        g_pCrntData = g_pNextData;
+        g_pNextData = tmp;
         
         // 水面を計算
         Calculate();
@@ -233,6 +242,7 @@ void InitProc(int argc, char **argv)
     g_Conf.heightRes = 192;
     g_Conf.wndWidth = g_Conf.widthRes;
     g_Conf.wndHeight = g_Conf.heightRes;
+    g_Conf.attRate = 0.99;
     g_Conf.csrIPDiv = 1;
     g_Conf.isFullScreen = false;
     
@@ -248,6 +258,7 @@ void InitProc(int argc, char **argv)
         printf("HeightResolution : %d\n", g_Conf.heightRes);
         printf("WindowWidth : %d\n", g_Conf.wndWidth);
         printf("WindowHeight : %d\n", g_Conf.wndHeight);
+        printf("AttenuationRate : %f\n", g_Conf.attRate);
         printf("InterpolatingDivide : %d\n", g_Conf.csrIPDiv);
         printf("FullScreen : %s\n", g_Conf.isFullScreen ? "ON" : "OFF");
         /*
@@ -412,6 +423,11 @@ bool ParseArgument(int argc, char **argv)
             case 'f':
                 // フルスクリーンモードに設定
                 g_Conf.isFullScreen = true;
+                break;
+            case 'a':
+                // 波紋の大きさを取得
+                if (argv[i][2] == '\0') g_Conf.attRate = atof(&argv[++i][0]);
+                else                    g_Conf.attRate = atof(&argv[i][2]);
                 break;
             case 'r':
                 // 波紋の大きさを取得
@@ -636,12 +652,8 @@ void Calculate()
     int maxHeight = (g_Conf.depthRes - 1) / 2;
     PosData upperLimit[4] = { maxHeight,  maxHeight,  maxHeight,  maxHeight};
     PosData lowerLimit[4] = {-maxHeight, -maxHeight, -maxHeight, -maxHeight};
-#ifndef SUB_ALGOLISM
-    Sint16 v = 0.99 * 32768;
+    Sint16 v = g_Conf.attRate * 32768;
     Sint16 mulnum[4] = {v, v, v, v};
-#else
-    Sint16 addnum[4] = {63, 63, 63, 63};
-#endif
     
     // 初期位置×に移動
     // 壁壁壁壁壁
@@ -714,8 +726,7 @@ void Calculate()
               "c" (upperLimit),            // オーバーチェック用配列
               "d" (lowerLimit)             // アンダーチェック用配列
             : "memory");
-#ifndef SUB_ALGOLISM
-            // <<< 1 - 符号付き16bit整数に対する(n/32768)倍アルゴリズム >>>
+            // <<< 1 - 符号付き16bit整数に対するn/32768倍アルゴリズム >>>
             // n倍して、上位2バイトと下位2バイトを得る。
             // 1.n=32768を掛ける(1倍の例)
             //                   SHHHHHHH LLLLLLLL
@@ -742,30 +753,6 @@ void Calculate()
             : "S" (mulnum),
               "D" (nextData)
             : "memory");
-#else
-            // <<< 2 - 符号付き16bit整数に対する(2^n-1)/(2^n)倍アルゴリズム >>>
-            // m * (2^n-1)/2^n = m * (1 - 1/2^n) = m*1 - m*(1/2^n)
-            // FPS=75.66
-            asm volatile (
-                // ■□■□ここから波を静める処理□■□■
-                // 符号付き整数にその最上位ビットを加算することで右シフト時に0方向への丸めを実現できる。
-                // 2^nで割る前に(2^n-1)足しておくことで商の切りあげを実現でき、
-                // それを1倍から引くことで、結果として(2^n-1)倍して(2^n)で割った時の切捨てを実現できる。
-                "movq  (%%edi),  %%mm0\n"    // 水面の高さ
-                "movq   %%mm0,   %%mm1\n"    // 水面の高さをコピー
-                "movq   %%mm0,   %%mm2\n"    // 水面の高さをコピー
-                "movq  (%%esi),  %%mm3\n"    // 2^n-1
-                "psrlw  $15,     %%mm2\n"    // 最上位ビットを抽出する
-                "paddsw %%mm2,   %%mm1\n"    // 最上位ビットを水面の高さに加算
-                "paddsw %%mm3,   %%mm1\n"    // 2^nで割る前に、(2^n-1)を足しておく
-                "psraw  $6,      %%mm1\n"    // 算術右nシフト演算(2^n分の1倍にする)
-                "psubsw %%mm1,   %%mm0\n"    // 2^n分の1倍を引いて2^n分の(2^n-1)倍にする
-                "movq   %%mm0,  (%%edi)\n"   // メモリに書き戻す
-            :
-            : "S" (addnum),
-              "D" (nextData)
-            : "memory");
-#endif
             // ポインタを進める
             nextData += 4;
             crntData += 4;
