@@ -60,24 +60,24 @@
 
 
 /* <<< To Do >>>
- ** 解像度の最大値。
- ** リファクタリングをする。
- 70 波の反射を自由端反射にする。
- 70 屈折テーブルキャッシュをファイルから読み込める様にする。
- 70 PaintToSurface関数内で拡大して描画する案の実験
- 60 vorboseモード
- 50 キャッシュを使わないモード
- 40 壁エディタ(円、直線、ピクセル単位の編集)
- 30 SSE等、他のマルチメディア命令のサポート
- 30 CPUマルチメディア命令のサポート状況によって処理を切替える
- 20 画面に情報を表示(FPS等)
- 10 他のディスプレイモードサポート
+ * ** 解像度の最大値。
+ * ** リファクタリングをする。
+ * 70 波の反射を自由端反射にする。
+ * 70 屈折テーブルキャッシュをファイルから読み込める様にする。
+ * 70 PaintToSurface関数内で拡大して描画する案の実験
+ * 60 vorboseモード
+ * 50 キャッシュを使わないモード
+ * 40 壁エディタ(円、直線、ピクセル単位の編集)
+ * 30 SSE等、他のマルチメディア命令のサポート
+ * 30 CPUマルチメディア命令のサポート状況によって処理を切替える
+ * 20 画面に情報を表示(FPS等)
+ * 10 他のディスプレイモードサポート
  */
 
 
 /* <<< Max FPS(400x300) - debug >>>
-   55.34
-   55.39 - inline
+ * 55.34
+ * 55.39 - inline
  */
 
 
@@ -825,17 +825,13 @@ void RippleOut(int x, int y)
 /* 水面描画関数 */
 void PaintToSurface(SDL_Surface *target)
 {
-    int SurfaceWidth = g_Conf.widthRes;
-    int SurfaceHeight = g_Conf.heightRes;
-    int Resolution = g_Conf.depthRes;
-    
     // スクリーンサーフェスをロック
     SDL_LockSurface(target);
     SDL_LockSurface(g_pBgImage);
     
     // 最初のピクセルへ移動
     PosData *waterData = g_pNextData;
-    waterData += (SurfaceWidth + 2) + 1;
+    waterData += (g_Conf.widthRes + 2) + 1;
     
     // 最初の行へのポインタで初期化
     Uint32 *scrLine = (Uint32 *)target->pixels;
@@ -846,9 +842,9 @@ void PaintToSurface(SDL_Surface *target)
     Uint32 bgPitch = g_pBgImage->pitch / sizeof(Uint32);
     
     // 描画
-    for (int y = 0; y < SurfaceHeight; y++)
+    for (int y = 0; y < g_Conf.heightRes; y++)
     {
-        for (int x = 0; x < SurfaceWidth; x++)
+        for (int x = 0; x < g_Conf.widthRes; x++)
         {
             int heightDiff;
             int dx;
@@ -856,31 +852,36 @@ void PaintToSurface(SDL_Surface *target)
             // X軸方向のずれを計算
             heightDiff = waterData[x + 1] - waterData[x - 1];
             if (heightDiff >= 0)
-                dx =  g_pRfraTbl[ heightDiff * Resolution + ((Resolution - 1) / 2 + waterData[x])];
+                dx =  g_pRfraTbl[ heightDiff * g_Conf.depthRes + ((g_Conf.depthRes - 1) / 2 + waterData[x])];
             else
-                dx = -g_pRfraTbl[-heightDiff * Resolution + ((Resolution - 1) / 2 + waterData[x])];
+                dx = -g_pRfraTbl[-heightDiff * g_Conf.depthRes + ((g_Conf.depthRes - 1) / 2 + waterData[x])];
             
             // Y軸方向のずれを計算
-            heightDiff = waterData[x + (SurfaceWidth + 2)] - waterData[x - (SurfaceWidth + 2)];
+            heightDiff = waterData[x + (g_Conf.widthRes + 2)] - waterData[x - (g_Conf.widthRes + 2)];
             if (heightDiff >= 0)
-                dy =  g_pRfraTbl[ heightDiff * Resolution + ((Resolution - 1) / 2 + waterData[x])];
+                dy =  g_pRfraTbl[ heightDiff * g_Conf.depthRes + ((g_Conf.depthRes - 1) / 2 + waterData[x])];
             else
-                dy = -g_pRfraTbl[-heightDiff * Resolution + ((Resolution - 1) / 2 + waterData[x])];
+                dy = -g_pRfraTbl[-heightDiff * g_Conf.depthRes + ((g_Conf.depthRes - 1) / 2 + waterData[x])];
             
-            // 範囲内に収まるように調整
-            if (x + dx < 0)                         dx = -x;
-            else if (x + dx > SurfaceWidth - 1)     dx = SurfaceWidth - 1 - x;
-            if (y + dy < 0)                         dy = -y;
-            else if (y + dy > SurfaceHeight - 1)    dy = SurfaceHeight - 1 - y;
+            // X軸方向のずれを範囲内に収まるように調整
+            if (x + dx < 0)
+                dx = -x;
+            else if (x + dx > g_Conf.widthRes - 1)
+                dx = g_Conf.widthRes - 1 - x;
+            // Y軸方向のずれを範囲内に収まるように調整
+            if (y + dy < 0)
+                dy = -y;
+            else if (y + dy > g_Conf.heightRes - 1)
+                dy = g_Conf.heightRes - 1 - y;
             
             // ずれた位置の色を代入
-            scrLine[x] = bgLine[x + bgPitch * dy + dx];
-//            scrLine[x] = (waterData[x] + (Resolution - 1) / 2) * 255 / Resolution;
+            scrLine[x] = bgLine[x + dx + bgPitch * dy];
+//            scrLine[x] = (waterData[x] + (g_Conf.depthRes - 1) / 2) * 255 / g_Conf.depthRes;
         }
         // 次の行にポインタを進める
         scrLine += scrPitch;
         bgLine += bgPitch;
-        waterData += SurfaceWidth + 2;
+        waterData += g_Conf.widthRes + 2;
     }
 
     // スクリーンサーフェスのロックを解除
