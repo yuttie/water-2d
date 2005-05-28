@@ -1,23 +1,18 @@
 /*
  *******************************************************************************
  *
- *  cpuidutil.h - *
+ *  calcfunc.h - Water-2d
  *
  *  Copyright  2004  Yuta Taniguchi
  *******************************************************************************
  */
 
 
-#ifndef __CPUIDUTIL_H
-#define __CPUIDUTIL_H
+#ifndef __CALCFUNC_H
+#define __CALCFUNC_H
 
 /* Function Prototype Declaration */
-bool CheckCPUID();
-unsigned int GetEDX();
-bool CheckMMX();
-bool CheckSSE();
-bool CheckSSE2();
+void CalculateMMX();
 
 #endif
-
 
