@@ -1,16 +1,22 @@
+/*
+ *******************************************************************************
+ *
+ *  imgscale.h - *
+ *
+ *  Copyright (C) 2004-2006 Yuta Taniguchi
+ *******************************************************************************
+ */
+
 #ifndef __IMGSCALE_H
 #define __IMGSCALE_H
-
-
 /* Îóµó·¿ */
-enum ScalingMethod
-{
+typedef enum __ScalingMethod {
     SM_SIMPLE,
     SM_BI_LINEAR
-};
+} ScalingMethod;
 
 
-void ScaleCopySurface(enum ScalingMethod method, SDL_Surface *srcSurface, SDL_Surface *desSurface);
+void scaleCopySurface(ScalingMethod method, SDL_Surface *srcSurface, SDL_Surface *desSurface);
 
 #endif
 

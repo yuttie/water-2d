@@ -3,7 +3,7 @@
 
 # Macro Definition
 DEBUG    = -g -pg
-OPT      = -O2
+OPT      = #-O2
 CC       = gcc
 CFLAGS   = $(OPT) -Wall -std=gnu99 `sdl-config --cflags` $(DEBUG)
 CXX      = g++
@@ -15,8 +15,8 @@ LIBS     = `sdl-config --libs` -lSDL_gfx
 RM       = rm -f
 PROF     = gprof
 TARGET   = water
-SRCS     = main.c imgscale.c cpuidutil.c calcfunc.c
-OBJS     = main.o imgscale.o cpuidutil.o calcfunc.o
+SRCS     = main.c imgscale.c cpuidutil.c calcfunc.c option_parser.c
+OBJS     = main.o imgscale.o cpuidutil.o calcfunc.o option_parser.o
 
 # Rules
 all: Makefile $(TARGET)
@@ -37,5 +37,7 @@ clean:
 calcfunc.o: calcfunc.c main.h calcfunc.h
 cpuidutil.o: cpuidutil.c cpuidutil.h
 imgscale.o: imgscale.c imgscale.h
-main.o: main.c imgscale.h cpuidutil.h calcfunc.h main.h
+main.o: main.c imgscale.h cpuidutil.h calcfunc.h option_parser.h main.h
+option_parser.o: option_parser.c main.h option_parser.h
+
 

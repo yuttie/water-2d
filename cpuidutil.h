@@ -3,10 +3,9 @@
  *
  *  cpuidutil.h - *
  *
- *  Copyright  2004  Yuta Taniguchi
+ *  Copyright (C) 2004-2004 Yuta Taniguchi
  *******************************************************************************
  */
-
 
 #ifndef __CPUIDUTIL_H
 #define __CPUIDUTIL_H

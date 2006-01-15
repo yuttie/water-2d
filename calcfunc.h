@@ -1,9 +1,9 @@
 /*
  *******************************************************************************
  *
- *  calcfunc.h - Water-2d
+ *  calcfunc.h - Water-2D-Float
  *
- *  Copyright  2004  Yuta Taniguchi
+ *  Copyright  2004-2006  Yuta Taniguchi
  *******************************************************************************
  */
 
@@ -12,7 +12,7 @@
 #define __CALCFUNC_H
 
 /* Function Prototype Declaration */
-void CalculateMMX();
+void stepFPU(float dt);
 
 #endif
 

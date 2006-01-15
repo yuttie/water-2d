@@ -1,31 +1,50 @@
 /*
  *******************************************************************************
  *
- *  calcfunc.c - Water-2d
+ *  calcfunc.c - MeshWater-2D-Float
  *
- *  Copyright  2004  Yuta Taniguchi
+ *  Copyright  2004-2006  Yuta Taniguchi
  *******************************************************************************
  */
-
 
 /* Include Files */
 #include <stdbool.h>
 #include "main.h"
 #include "calcfunc.h"
 
-/* Global Variable */
-extern ProgConfig   g_Conf;         // プログラムの設定
-extern PosData     *g_pNextData;    // 次の水面データ
-extern PosData     *g_pCrntData;    // 今の水面データ
-extern PosData     *g_pPrevData;    // 前の水面データ
-extern PosData     *g_pRiplData;    // 現在の波紋データへのポインタ
-extern Uint16      *g_pRfraTbl;     // 屈折による変移量テーブル
-extern SDL_Surface *g_pScreen;      // スクリーンサーフェス
-extern SDL_Surface *g_pBgImage;     // 背景サーフェス
-extern void (*pCalcFunc)();         // 水面データ更新関数
+/* FPU */
+void stepFPU(float dt) {
+    float m = 1;
+    float k = 1;
+    // 位置と速度の一部を更新
+    for (int y = 1; y <= gConfig.virtualHeight; y++) {
+        for (int x = 1; x <= gConfig.virtualWidth; x++) {
+            int offset = gConfig.meshWidth * y + x;
+            gPosition[offset] += gVelocity[offset] * dt +
+                                 gForce[offset] * dt * dt / (2 * m);
+            gVelocity[offset] += gForce[offset] * dt / (2 * m);
+        }
+    }
+    // 新しい力を求める
+    for (int y = 1; y <= gConfig.virtualHeight; y++) {
+        for (int x = 1; x <= gConfig.virtualWidth; x++) {
+            int offset = gConfig.meshWidth * y + x;
+            gForce[offset]  = -k * (gPosition[offset] - gPosition[offset - 1]);
+            gForce[offset] += -k * (gPosition[offset] - gPosition[offset + 1]);
+            gForce[offset] += -k * (gPosition[offset] - gPosition[offset - gConfig.meshWidth]);
+            gForce[offset] += -k * (gPosition[offset] - gPosition[offset + gConfig.meshWidth]);
+        }
+    }
+    // 速度の一部を更新
+    for (int y = 1; y <= gConfig.virtualHeight; y++) {
+        for (int x = 1; x <= gConfig.virtualWidth; x++) {
+            int offset = gConfig.meshWidth * y + x;
+            gVelocity[offset] += gForce[offset] * dt / (2 * m);
+        }
+    }
+}
 
-
-/* MMX */
+/* MMX
 void CalculateMMX()
 {
     // 飽和処理用上限/下限配列
@@ -147,5 +166,7 @@ void CalculateMMX()
     // MMX終了
     asm ("emms\n");
 }
+*/
+
 
 

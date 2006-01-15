@@ -3,7 +3,7 @@
  *
  *  cpuidutil.c - *
  *
- *  Copyright  2004  Yuta Taniguchi
+ *  Copyright (C) 2004-2004 Yuta Taniguchi
  *******************************************************************************
  */
 
@@ -13,8 +13,7 @@
 #include "cpuidutil.h"
 
 /* CPUID命令の有無確認関数 */
-bool CheckCPUID()
-{
+bool CheckCPUID() {
     bool b;
     asm volatile (
         "pushfl\n"
@@ -41,8 +40,7 @@ bool CheckCPUID()
 }
 
 /* CPUID命令で得られるEDXレジスタを返す関数 */
-unsigned int GetEDX()
-{
+unsigned int GetEDX() {
     unsigned int edx = 0;
     asm volatile (
         "movl $0x1, %%eax\n"
@@ -54,8 +52,7 @@ unsigned int GetEDX()
 }
 
 /* MMX命令の有無確認関数 */
-bool CheckMMX()
-{
+bool CheckMMX() {
     bool b = 0;
     asm volatile (
         "movl $0x1, %%eax\n"
@@ -68,8 +65,7 @@ bool CheckMMX()
 }
 
 /* SSE命令の有無確認関数 */
-bool CheckSSE()
-{
+bool CheckSSE() {
     bool b;
     asm volatile (
         "movl $0x1, %%eax\n"
@@ -82,8 +78,7 @@ bool CheckSSE()
 }
 
 /* SSE2命令の有無確認関数 */
-bool CheckSSE2()
-{
+bool CheckSSE2() {
     bool b;
     asm volatile (
         "movl $0x1, %%eax\n"
