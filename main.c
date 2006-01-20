@@ -185,6 +185,7 @@ void initProc(int argc, char **argv) {
 
     // CPUIDから水面データを更新する関数を決定
     stepFunc = stepFPU;
+    stepFunc = stepSSE;
 
     // SDL初期化してスクリーンサーフェスを取得
     initSDL();

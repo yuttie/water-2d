@@ -13,6 +13,7 @@
 
 /* Function Prototype Declaration */
 void stepFPU(float dt);
+void stepSSE(float dt);
 
 #endif
 
