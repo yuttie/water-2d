@@ -111,6 +111,7 @@ int main(int argc, char **argv) {
     Uint32 startTick = SDL_GetTicks();
     Uint32 endTick = 0;
     Uint32 frameCount = 0;
+    double maxFps = 0;
     // 無限ループ
     while(!eventProc()) {
         // 水面を計算
@@ -123,9 +124,11 @@ int main(int argc, char **argv) {
         endTick = SDL_GetTicks();
         frameCount++;
         if (endTick - startTick > 1000) {
+            double fps = frameCount * 1000.0 / (endTick - startTick);
+            if (fps > maxFps) maxFps = fps;
             // ウィンドウキャプションに表示するための文字列を作成
             char cap[16];
-            sprintf(cap, "FPS : %#.2f", frameCount * 1000.0 / (endTick - startTick));
+            sprintf(cap, "FPS:%#.2f(Max:%#.2f)", fps, maxFps);
             // 文字列をウィンドウキャプションに設定
             SDL_WM_SetCaption(cap, NULL);
             // スタート時刻・フレーム数のリセット
