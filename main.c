@@ -59,6 +59,8 @@
 
 /* Constant */
 const double PI = 3.1415926535;    // 円周率
+const int hMargin = 2;
+const int vMargin = 1;
 
 /* TextData */
 const char const *MSG_ERROR_INVALID_OPTION =
@@ -88,6 +90,9 @@ const char const *MSG_HELP =
 
 /* Global Variable */
 Config   gConfig;         // プログラムの設定
+float   *uaPos;
+float   *uaVel;
+float   *uaForce;
 float   *gPosition;       // 位置
 float   *gVelocity;       // 速度
 float   *gForce;          // 速度
@@ -207,16 +212,27 @@ void initProc(int argc, char **argv) {
             0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
     scaleCopySurface(SM_BI_LINEAR, tmpBg, gImage);
     
-    // メッシュのサイズを決定(幅は4の倍数に揃える)
-    gConfig.meshWidth = 4 * (((gConfig.virtualWidth + 2) + 3) / 4);
-    gConfig.meshHeight = gConfig.virtualHeight + 2;
+    // 仮想水面の幅を4の倍数に調整する(for SSE)
+    gConfig.virtualWidth = 4 * ((gConfig.virtualWidth + 3) / 4);
+
+    // メッシュのサイズを決定
+    gConfig.meshWidth = hMargin + gConfig.virtualWidth + hMargin;
+    gConfig.meshHeight = vMargin + gConfig.virtualHeight + vMargin;
+
+    // 16byteアラインメント(for SSE)のために余分に確保する
+    int meshSize =  gConfig.meshWidth * gConfig.meshHeight;
+    meshSize += 16 / sizeof(float);
 
     // 水面データ配列作成
-    int meshSize =  gConfig.meshWidth * gConfig.meshHeight;
-    gPosition = calloc(meshSize, sizeof(float));
-    gVelocity = calloc(meshSize, sizeof(float));
-    gForce    = calloc(meshSize, sizeof(float));
-    
+    uaPos = (float *)calloc(meshSize, sizeof(float));
+    uaVel = (float *)calloc(meshSize, sizeof(float));
+    uaForce = (float *)calloc(meshSize, sizeof(float));
+
+    // 16byte境界(for SSE)に調節する
+    gPosition = (float *)((unsigned int)uaPos   + (16 - ((unsigned int)(uaPos + hMargin)   & 0xf)));
+    gVelocity = (float *)((unsigned int)uaVel   + (16 - ((unsigned int)(uaVel + hMargin)   & 0xf)));
+    gForce    = (float *)((unsigned int)uaForce + (16 - ((unsigned int)(uaForce + hMargin) & 0xf)));
+
     // 波紋データ作成
     gRippleGeometry = createRippleData(gConfig.rippleRadius);
     
@@ -301,9 +317,9 @@ void exitProc() {
     
     // メモリの解放
     SDL_FreeSurface(gImage);
-    free(gPosition);
-    free(gVelocity);
-    free(gForce);
+    free(uaPos);
+    free(uaVel);
+    free(uaForce);
     free(gRippleGeometry);
     free(gRefractionTbl);
     
@@ -421,8 +437,8 @@ void rippleOut(int x, int y) {
     float *position = gPosition;
     float *velocity = gVelocity;
     // 波データの左上隅にあたる位置に移動
-    int incValue = gConfig.meshWidth * ((y + 1) - gConfig.rippleRadius) +
-                                       ((x + 1) - gConfig.rippleRadius);
+    int incValue = gConfig.meshWidth * ((y + vMargin) - gConfig.rippleRadius) +
+                                       ((x + hMargin) - gConfig.rippleRadius);
     position += incValue;
     velocity += incValue;
     //float *riplData = gRippleGeometry;
@@ -453,7 +469,7 @@ void paintToSurface(SDL_Surface *target) {
     SDL_LockSurface(gImage);
     // 最初のピクセルへ移動
     float *waterData = gPosition;
-    waterData += gConfig.meshWidth + 1;
+    waterData += gConfig.meshWidth + hMargin;
     // 最初の行へのポインタで初期化
     Uint32 *scrLine = (Uint32 *)target->pixels;
     Uint32 *bgLine = (Uint32 *)gImage->pixels;

@@ -31,6 +31,10 @@ typedef struct __Config {
     bool   isVerbose;      // 詳細を出力するか
 } Config;
 
+/* Constant */
+extern const int hMargin;
+extern const int vMargin;
+
 /* Global Variable */
 extern Config   gConfig;
 extern float   *gPosition;
