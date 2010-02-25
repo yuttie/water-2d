@@ -53,7 +53,8 @@
 #include "SDL/SDL.h"
 #include "imgscale.h"
 #include "cpuidutil.h"
-#include "calcfunc.h"
+#include "step_fpu.h"
+#include "step_sse.h"
 #include "option_parser.h"
 #include "main.h"
 
