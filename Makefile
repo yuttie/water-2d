@@ -5,13 +5,13 @@
 # Macro Definition
 DEBUG    = -g -pg
 CC       = gcc
-CFLAGS   = -Wall -std=gnu99 `sdl-config --cflags` $(DEBUG)
+CFLAGS   = -Wall -std=gnu99 `pkg-config --cflags sdl SDL_gfx` $(DEBUG)
 CXX      = g++
-CXXFLAGS = -Wall `sdl-config --cflags` $(DEBUG)
+CXXFLAGS = -Wall `pkg-config --cflags sdl SDL_gfx` $(DEBUG)
 LD       = gcc
 LDFLAGS  = $(DEBUG)
 INCLUDES = -I.
-LIBS     = `sdl-config --libs` -lSDL_gfx
+LIBS     = `pkg-config --libs sdl SDL_gfx`
 RM       = rm -f
 PROF     = gprof
 TARGET   = water2d
