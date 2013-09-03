@@ -49,6 +49,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <math.h>
 #include "SDL/SDL.h"
 #include "imgscale.h"
@@ -233,9 +234,9 @@ void initProc(int argc, char **argv) {
     uaForce = (float *)calloc(meshSize, sizeof(float));
 
     // 16byte境界(for SSE)に調節する
-    gPosition = (float *)((unsigned int)uaPos   + (16 - ((unsigned int)(uaPos + hMargin)   & 0xf)));
-    gVelocity = (float *)((unsigned int)uaVel   + (16 - ((unsigned int)(uaVel + hMargin)   & 0xf)));
-    gForce    = (float *)((unsigned int)uaForce + (16 - ((unsigned int)(uaForce + hMargin) & 0xf)));
+    gPosition = (float *)((uintptr_t)uaPos   + (16 - ((uintptr_t)(uaPos + hMargin)   & 0xf)));
+    gVelocity = (float *)((uintptr_t)uaVel   + (16 - ((uintptr_t)(uaVel + hMargin)   & 0xf)));
+    gForce    = (float *)((uintptr_t)uaForce + (16 - ((uintptr_t)(uaForce + hMargin) & 0xf)));
 
     // 波紋データ作成
     gRippleGeometry = createRippleData(gConfig.rippleRadius);
