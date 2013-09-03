@@ -23,7 +23,7 @@ void stepSSE(float dt) {
     float *force = gForce + gConfig.meshWidth * vMargin;
     for (int y = vMargin; y < vMargin + gConfig.virtualHeight; y++) {
         for (int x = hMargin; x < hMargin + gConfig.virtualWidth; x += 4) {
-            asm volatile (
+            __asm__ __volatile__ (
                 // メモリからレジスタにロード
                 "movaps (%%eax,%%esi,4), %%xmm0\n"
                 "movaps (%%ebx,%%esi,4), %%xmm1\n"
@@ -65,7 +65,7 @@ void stepSSE(float dt) {
     force = gForce + gConfig.meshWidth * vMargin;
     for (int y = vMargin; y < vMargin + gConfig.virtualHeight; y++) {
         for (int x = hMargin; x < hMargin + gConfig.virtualWidth; x += 4) {
-            asm volatile (
+            __asm__ __volatile__ (
                 // メモリからレジスタにロード
                 "movaps (%%eax,%%edi,4), %%xmm0\n"
                 "movups -4(%%eax,%%edi,4), %%xmm1\n"//左
@@ -105,7 +105,7 @@ void stepSSE(float dt) {
     force = gForce + gConfig.meshWidth * vMargin;
     for (int y = vMargin; y < vMargin + gConfig.virtualHeight; y++) {
         for (int x = hMargin; x < hMargin + gConfig.virtualWidth; x += 4) {
-            asm volatile (
+            __asm__ __volatile__ (
                 // メモリからレジスタにロード
                 "movaps (%%eax,%%edi,4), %%xmm0\n"
                 "movaps (%%ebx,%%edi,4), %%xmm1\n"

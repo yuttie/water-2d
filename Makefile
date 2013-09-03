@@ -5,7 +5,7 @@
 # Macro Definition
 DEBUG    = -g -pg
 CC       = gcc
-CFLAGS   = -Wall -std=gnu99 `pkg-config --cflags sdl SDL_gfx` $(DEBUG)
+CFLAGS   = -Wall -std=c99 `pkg-config --cflags sdl SDL_gfx` $(DEBUG)
 CXX      = g++
 CXXFLAGS = -Wall `pkg-config --cflags sdl SDL_gfx` $(DEBUG)
 LD       = gcc

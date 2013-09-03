@@ -21,7 +21,7 @@ inline bool CheckFeature(unsigned int i);
 /* CPUID命令の有無確認関数 */
 bool CheckCPUID() {
     bool b;
-    asm volatile (
+    __asm__ __volatile__ (
 #if IS_64BIT_CPU
         "pushfq\n\t"
         "pushfq\n\t"
@@ -62,7 +62,7 @@ bool CheckCPUID() {
 /* CPUID命令で得られるEDXレジスタを返す関数 */
 unsigned int GetEDX() {
     unsigned int x = 1;
-    asm volatile (
+    __asm__ __volatile__ (
         "cpuid\n\t"
         : "=d" (x)
         : "a" (x)
@@ -74,7 +74,7 @@ unsigned int GetEDX() {
 /* featureの有無確認関数 */
 bool CheckFeature(unsigned int i) {
     bool x = 1;
-    asm volatile (
+    __asm__ __volatile__ (
         "cpuid\n\t"
         "btl %[i], %%edx\n\t"
         "setc %[result]\n\t"
