@@ -59,7 +59,7 @@
 #include "main.h"
 
 /* Constant */
-const double PI = 3.1415926535;    // 円周率
+const double PI = 3.14159265358979323846;    // 円周率
 const int hMargin = 2;
 const int vMargin = 1;
 
