@@ -14,37 +14,37 @@
 #define GET_OPT_ARG(f) ((argv[i][2] == '\0') ?\
                               f(&argv[++i][0]) : f(&argv[i][2]))
 
-/* µ¯Æ°»ş°ú¿ô²òÀÏ´Ø¿ô */
+/* èµ·å‹•æ™‚å¼•æ•°è§£æé–¢æ•° */
 ParseResult parseOption(Config *config, int argc, char **argv) {
     for (int i = 1; i < argc; i++) {
         if (argv[i][0] == '-') {
             switch (argv[i][1]) {
-            case 'h': // »È¤¤Êı¤òÉ½¼¨¤·¤Æ½ªÎ»
+            case 'h': // ä½¿ã„æ–¹ã‚’è¡¨ç¤ºã—ã¦çµ‚äº†
                 printf(MSG_HELP);
                 return OPTPSR_SUCCESS_EXIT;
                 break;
-            case 'v': // ¾éÄ¹¤ÊÉ½¼¨¤ò¹Ô¤¦
+            case 'v': // å†—é•·ãªè¡¨ç¤ºã‚’è¡Œã†
                 config->isVerbose = true;
                 break;
-            case 'f': // ¥Õ¥ë¥¹¥¯¥ê¡¼¥ó¥â¡¼¥É¤ËÀßÄê
+            case 'f': // ãƒ•ãƒ«ã‚¹ã‚¯ãƒªãƒ¼ãƒ³ãƒ¢ãƒ¼ãƒ‰ã«è¨­å®š
                 config->isFullScreen = true;
                 break;
-            case 'a': // ÇÈÌæ¤Î¸º¿êÎ¨¤ò¼èÆÀ
+            case 'a': // æ³¢ç´‹ã®æ¸›è¡°ç‡ã‚’å–å¾—
                 config->attRate = GET_OPT_ARG(atof);
                 break;
-            case 'r': // ÇÈÌæ¤ÎÂç¤­¤µ¤ò¼èÆÀ
+            case 'r': // æ³¢ç´‹ã®å¤§ãã•ã‚’å–å¾—
                 config->rippleRadius = GET_OPT_ARG(atoi);
                 break;
-            case 'i': // ÇØ·Ê¤Î¥Õ¥¡¥¤¥ëÌ¾¤ò¼èÆÀ
+            case 'i': // èƒŒæ™¯ã®ãƒ•ã‚¡ã‚¤ãƒ«åã‚’å–å¾—
                 config->imagePath = GET_OPT_ARG();
                 break;
-            default: // ÉÔÀµ¤Ê°ú¿ô¤¬»ØÄê¤µ¤ì¤¿¾ì¹ç¡¢¥¨¥é¡¼É½¼¨¤ò¤·¤Æ½ªÎ»
+            default: // ä¸æ­£ãªå¼•æ•°ãŒæŒ‡å®šã•ã‚ŒãŸå ´åˆã€ã‚¨ãƒ©ãƒ¼è¡¨ç¤ºã‚’ã—ã¦çµ‚äº†
                 fprintf(stderr, MSG_ERROR_INVALID_OPTION, argv[i]);
                 return OPTPSR_FAILED;
             }
         }
-        else { // '-'¤Ç»Ï¤Ş¤é¤Ê¤¤¡¢ÉÔÀµ¤Ê°ú¿ô¤¬»ØÄê¤µ¤ì¤¿¾ì¹ç
-            // ¥¨¥é¡¼É½¼¨¤ò¤·¤Æ½ªÎ»
+        else { // '-'ã§å§‹ã¾ã‚‰ãªã„ã€ä¸æ­£ãªå¼•æ•°ãŒæŒ‡å®šã•ã‚ŒãŸå ´åˆ
+            // ã‚¨ãƒ©ãƒ¼è¡¨ç¤ºã‚’ã—ã¦çµ‚äº†
             fprintf(stderr, MSG_ERROR_INVALID_OPTION, argv[i]);
             return OPTPSR_FAILED;
         }

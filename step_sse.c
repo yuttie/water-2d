@@ -17,23 +17,23 @@ void stepSSE(float dt) {
     float m = 1;
     float k = 1;
     float inv2m = 1 / (2 * m);
-    // °ÌÃÖ¤ÈÂ®ÅÙ¤Î°ìÉô¤ò¹¹¿·
+    // ä½ç½®ã¨é€Ÿåº¦ã®ä¸€éƒ¨ã‚’æ›´æ–°
     float *pos = gPosition + gConfig.meshWidth * vMargin;
     float *vel = gVelocity + gConfig.meshWidth * vMargin;
     float *force = gForce + gConfig.meshWidth * vMargin;
     for (int y = vMargin; y < vMargin + gConfig.virtualHeight; y++) {
         for (int x = hMargin; x < hMargin + gConfig.virtualWidth; x += 4) {
             asm volatile (
-                // ¥á¥â¥ê¤«¤é¥ì¥¸¥¹¥¿¤Ë¥í¡¼¥É
+                // ãƒ¡ãƒ¢ãƒªã‹ã‚‰ãƒ¬ã‚¸ã‚¹ã‚¿ã«ãƒ­ãƒ¼ãƒ‰
                 "movaps (%%eax,%%esi,4), %%xmm0\n"
                 "movaps (%%ebx,%%esi,4), %%xmm1\n"
                 "movaps (%%ecx,%%esi,4), %%xmm2\n"
                 "movss  (%%edx), %%xmm3\n"
                 "movss  (%%edi), %%xmm4\n"
-                // dt, inv2m¤ò¥Ù¥¯¥È¥ë²½
+                // dt, inv2mã‚’ãƒ™ã‚¯ãƒˆãƒ«åŒ–
                 "shufps $0, %%xmm3, %%xmm3\n"
                 "shufps $0, %%xmm4, %%xmm4\n"
-                // °ÌÃÖ¤ò·×»»
+                // ä½ç½®ã‚’è¨ˆç®—
                 "mulps  %%xmm3, %%xmm1\n"
                 "mulps  %%xmm3, %%xmm2\n"
                 "mulps  %%xmm3, %%xmm2\n"
@@ -41,10 +41,10 @@ void stepSSE(float dt) {
                 "addps  %%xmm1, %%xmm0\n"
                 "addps  %%xmm2, %%xmm0\n"
                 "movaps %%xmm0, (%%eax,%%esi,4)\n"
-                // ¥á¥â¥ê¤«¤é¥ì¥¸¥¹¥¿¤Ë¥í¡¼¥É
+                // ãƒ¡ãƒ¢ãƒªã‹ã‚‰ãƒ¬ã‚¸ã‚¹ã‚¿ã«ãƒ­ãƒ¼ãƒ‰
                 "movaps (%%ebx,%%esi,4), %%xmm1\n"
                 "movaps (%%ecx,%%esi,4), %%xmm2\n"
-                // Â®ÅÙ¤òÉôÊ¬Åª¤Ë·×»»
+                // é€Ÿåº¦ã‚’éƒ¨åˆ†çš„ã«è¨ˆç®—
                 "mulps  %%xmm3, %%xmm2\n"
                 "mulps  %%xmm4, %%xmm2\n"
                 "addps  %%xmm2, %%xmm1\n"
@@ -59,27 +59,27 @@ void stepSSE(float dt) {
         vel += gConfig.meshWidth;
         force += gConfig.meshWidth;
     }
-    // ¿·¤·¤¤ÎÏ¤òµá¤á¤ë
+    // æ–°ã—ã„åŠ›ã‚’æ±‚ã‚ã‚‹
     pos = gPosition + gConfig.meshWidth * vMargin;
     vel = gVelocity + gConfig.meshWidth * vMargin;
     force = gForce + gConfig.meshWidth * vMargin;
     for (int y = vMargin; y < vMargin + gConfig.virtualHeight; y++) {
         for (int x = hMargin; x < hMargin + gConfig.virtualWidth; x += 4) {
             asm volatile (
-                // ¥á¥â¥ê¤«¤é¥ì¥¸¥¹¥¿¤Ë¥í¡¼¥É
+                // ãƒ¡ãƒ¢ãƒªã‹ã‚‰ãƒ¬ã‚¸ã‚¹ã‚¿ã«ãƒ­ãƒ¼ãƒ‰
                 "movaps (%%eax,%%edi,4), %%xmm0\n"
-                "movups -4(%%eax,%%edi,4), %%xmm1\n"//º¸
-                "movups 4(%%eax,%%edi,4), %%xmm2\n"//±¦
+                "movups -4(%%eax,%%edi,4), %%xmm1\n"//å·¦
+                "movups 4(%%eax,%%edi,4), %%xmm2\n"//å³
                 "movl   %%edi, %%esi\n"
                 "addl   %%edx, %%esi\n"
-                "movaps (%%eax,%%esi,4), %%xmm3\n"//²¼
+                "movaps (%%eax,%%esi,4), %%xmm3\n"//ä¸‹
                 "movl   %%edi, %%esi\n"
                 "subl   %%edx, %%esi\n"
-                "movaps (%%eax,%%esi,4), %%xmm4\n"//¾å
+                "movaps (%%eax,%%esi,4), %%xmm4\n"//ä¸Š
                 "movss  (%%ecx), %%xmm5\n"
-                // k¤ò¥Ù¥¯¥È¥ë²½
+                // kã‚’ãƒ™ã‚¯ãƒˆãƒ«åŒ–
                 "shufps $0, %%xmm5, %%xmm5\n"
-                // ÎÏ¤ò·×»»
+                // åŠ›ã‚’è¨ˆç®—
                 "addps  %%xmm2, %%xmm1\n"
                 "addps  %%xmm3, %%xmm1\n"
                 "addps  %%xmm4, %%xmm1\n"
@@ -99,22 +99,22 @@ void stepSSE(float dt) {
         vel += gConfig.meshWidth;
         force += gConfig.meshWidth;
     }
-    // Â®ÅÙ¤Î°ìÉô¤ò¹¹¿·
+    // é€Ÿåº¦ã®ä¸€éƒ¨ã‚’æ›´æ–°
     pos = gPosition + gConfig.meshWidth * vMargin;
     vel = gVelocity + gConfig.meshWidth * vMargin;
     force = gForce + gConfig.meshWidth * vMargin;
     for (int y = vMargin; y < vMargin + gConfig.virtualHeight; y++) {
         for (int x = hMargin; x < hMargin + gConfig.virtualWidth; x += 4) {
             asm volatile (
-                // ¥á¥â¥ê¤«¤é¥ì¥¸¥¹¥¿¤Ë¥í¡¼¥É
+                // ãƒ¡ãƒ¢ãƒªã‹ã‚‰ãƒ¬ã‚¸ã‚¹ã‚¿ã«ãƒ­ãƒ¼ãƒ‰
                 "movaps (%%eax,%%edi,4), %%xmm0\n"
                 "movaps (%%ebx,%%edi,4), %%xmm1\n"
                 "movss  (%%ecx), %%xmm2\n"
                 "movss  (%%edx), %%xmm3\n"
-                // dt, inv2m¤ò¥Ù¥¯¥È¥ë²½
+                // dt, inv2mã‚’ãƒ™ã‚¯ãƒˆãƒ«åŒ–
                 "shufps $0, %%xmm2, %%xmm2\n"
                 "shufps $0, %%xmm3, %%xmm3\n"
-                // Â®ÅÙ¤òÉôÊ¬Åª¤Ë·×»»
+                // é€Ÿåº¦ã‚’éƒ¨åˆ†çš„ã«è¨ˆç®—
                 "mulps  %%xmm2, %%xmm1\n"
                 "mulps  %%xmm3, %%xmm1\n"
                 "addps  %%xmm1, %%xmm0\n"

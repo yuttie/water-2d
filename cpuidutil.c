@@ -18,7 +18,7 @@
 inline bool CheckFeature(unsigned int i);
 
 
-/* CPUIDÌ¿Îá¤ÎÍ­Ìµ³ÎÇ§´Ø¿ô */
+/* CPUIDå‘½ä»¤ã®æœ‰ç„¡ç¢ºèªé–¢æ•° */
 bool CheckCPUID() {
     bool b;
     asm volatile (
@@ -59,7 +59,7 @@ bool CheckCPUID() {
     return b;
 }
 
-/* CPUIDÌ¿Îá¤ÇÆÀ¤é¤ì¤ëEDX¥ì¥¸¥¹¥¿¤òÊÖ¤¹´Ø¿ô */
+/* CPUIDå‘½ä»¤ã§å¾—ã‚‰ã‚Œã‚‹EDXãƒ¬ã‚¸ã‚¹ã‚¿ã‚’è¿”ã™é–¢æ•° */
 unsigned int GetEDX() {
     unsigned int x = 1;
     asm volatile (
@@ -71,7 +71,7 @@ unsigned int GetEDX() {
     return x;
 }
 
-/* feature¤ÎÍ­Ìµ³ÎÇ§´Ø¿ô */
+/* featureã®æœ‰ç„¡ç¢ºèªé–¢æ•° */
 bool CheckFeature(unsigned int i) {
     bool x = 1;
     asm volatile (
@@ -85,11 +85,11 @@ bool CheckFeature(unsigned int i) {
     return x;
 }
 
-/* MMXÌ¿Îá¤ÎÍ­Ìµ³ÎÇ§´Ø¿ô */
+/* MMXå‘½ä»¤ã®æœ‰ç„¡ç¢ºèªé–¢æ•° */
 bool CheckMMX() { return CheckFeature(23); }
 
-/* SSEÌ¿Îá¤ÎÍ­Ìµ³ÎÇ§´Ø¿ô */
+/* SSEå‘½ä»¤ã®æœ‰ç„¡ç¢ºèªé–¢æ•° */
 bool CheckSSE() { return CheckFeature(25); }
 
-/* SSE2Ì¿Îá¤ÎÍ­Ìµ³ÎÇ§´Ø¿ô */
+/* SSE2å‘½ä»¤ã®æœ‰ç„¡ç¢ºèªé–¢æ•° */
 bool CheckSSE2() { return CheckFeature(26); }

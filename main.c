@@ -13,18 +13,18 @@
 
 
 /* <<< To Do >>>
- * ** �����٤κ����͡�
- * ** ��ե�������󥰤򤹤롣
- * 70 �Ȥ�ȿ�ͤ�ͳüȿ�ͤˤ��롣
- * 70 ���ޥơ��֥륭��å����ե����뤫���ɤ߹�����ͤˤ��롣
- * 70 PaintToSurface�ؿ���ǳ��礷�����褹��Ƥμ¸�
- * 60 vorbose�⡼��
- * 50 ����å����Ȥ�ʤ��⡼��
- * 40 �ɥ��ǥ���(�ߡ�ľ�����ԥ�����ñ�̤��Խ�)
- * 30 SSE����¾�Υޥ����ǥ���̿��Υ��ݡ���
- * 30 CPU�ޥ����ǥ���̿��Υ��ݡ��Ⱦ����ˤ�äƽ��������ؤ���
- * 20 ���̤˾����ɽ��(FPS��)
- * 10 ¾�Υǥ����ץ쥤�⡼�ɥ��ݡ���
+ * ** 解像度の最大値。
+ * ** リファクタリングをする。
+ * 70 波の反射を自由端反射にする。
+ * 70 屈折テーブルキャッシュをファイルから読み込める様にする。
+ * 70 PaintToSurface関数内で拡大して描画する案の実験
+ * 60 vorboseモード
+ * 50 キャッシュを使わないモード
+ * 40 壁エディタ(円、直線、ピクセル単位の編集)
+ * 30 SSE等、他のマルチメディア命令のサポート
+ * 30 CPUマルチメディア命令のサポート状況によって処理を切替える
+ * 20 画面に情報を表示(FPS等)
+ * 10 他のディスプレイモードサポート
  */
 
 
@@ -33,15 +33,15 @@
 
 
 /* <<< Idea >>>
- * FPS�κ����ͤ����Ǥ���褦�ˤ���
- * -v���ץ�������ǵ�ư����MaxWaterHeight�ʤɤΥ��ߥ�졼�����ǻȤ�����ͤ򥳥󥽡����ɽ������
- * �طʤβ������б����������䤹
+ * FPSの最大値を指定できるようにする
+ * -vオプション指定で起動時にMaxWaterHeightなどのシミュレーションで使われる数値をコンソールに表示する
+ * 背景の画像の対応形式を増やす
  * 
  */
 
 
 /* <<< Specification >>>
- * ARGB-32bit�Τߥ��ݡ���
+ * ARGB-32bitのみサポート
  */
 
 
@@ -59,7 +59,7 @@
 #include "main.h"
 
 /* Constant */
-const double PI = 3.1415926535;    // �߼�Ψ
+const double PI = 3.1415926535;    // 円周率
 const int hMargin = 2;
 const int vMargin = 1;
 
@@ -90,65 +90,65 @@ const char const *MSG_HELP =
     "    -pN(=512)         : Set depth resolution as N. Affect '-m' option.\n";
 
 /* Global Variable */
-Config   gConfig;         // �ץ�����������
+Config   gConfig;         // プログラムの設定
 float   *uaPos;
 float   *uaVel;
 float   *uaForce;
-float   *gPosition;       // ����
-float   *gVelocity;       // ®��
-float   *gForce;          // ®��
-float   *gRippleGeometry; // ���ߤ�����ǡ����ؤΥݥ���
-Uint16  *gRefractionTbl;  // ���ޤˤ���Ѱ��̥ơ��֥�
-SDL_Surface *gScreen;     // �����꡼�󥵡��ե���
-SDL_Surface *gImage;      // �طʥ��᡼�������ե���
-void (*stepFunc)(float dt);       // ���̥ǡ��������ؿ�
+float   *gPosition;       // 位置
+float   *gVelocity;       // 速度
+float   *gForce;          // 速度
+float   *gRippleGeometry; // 現在の波紋データへのポインタ
+Uint16  *gRefractionTbl;  // 屈折による変移量テーブル
+SDL_Surface *gScreen;     // スクリーンサーフェス
+SDL_Surface *gImage;      // 背景イメージサーフェス
+void (*stepFunc)(float dt);       // 水面データ更新関数
 
 
 /* Main Function */
 int main(int argc, char **argv) {
-    // �ץ����������
+    // プログラム初期化
     initProc(argc, argv);
-    // FPS��¬���ѿ�
+    // FPS計測用変数
     Uint32 startTick = SDL_GetTicks();
     Uint32 endTick = 0;
     Uint32 frameCount = 0;
     double maxFps = 0;
-    // ̵�¥롼��
+    // 無限ループ
     while(!eventProc()) {
-        // ���̤�׻�
+        // 水面を計算
         stepFunc(0.1);
-        // ���̤򥹥��꡼�󥵡��ե��������褹��
+        // 水面をスクリーンサーフェスに描画する
         paintToSurface(gScreen);
-        // ɽ���򹹿�
+        // 表示を更新
         SDL_UpdateRect(gScreen, 0, 0, 0, 0);
-        // FPS��¬
+        // FPS計測
         endTick = SDL_GetTicks();
         frameCount++;
         if (endTick - startTick > 1000) {
             double fps = frameCount * 1000.0 / (endTick - startTick);
             if (fps > maxFps) maxFps = fps;
-            // ������ɥ�����ץ�����ɽ�����뤿���ʸ��������
+            // ウィンドウキャプションに表示するための文字列を作成
             char cap[16];
             sprintf(cap, "FPS:%#.2f(Max:%#.2f)", fps, maxFps);
-            // ʸ����򥦥���ɥ�����ץ���������
+            // 文字列をウィンドウキャプションに設定
             SDL_WM_SetCaption(cap, NULL);
-            // �������Ȼ���ե졼����Υꥻ�å�
+            // スタート時刻・フレーム数のリセット
             startTick = SDL_GetTicks();
             frameCount = 0;
         }
     }
-    // �ץ�����ཪλ����
+    // プログラム終了処理
     exitProc();
     return 0;
 }
 
 
-/* �ץ�����������ؿ� */
+/* プログラム初期化関数 */
 void initProc(int argc, char **argv) {
-    // �ץ������������ǥե�����ͤǽ����
+    // プログラムの設定をデフォルト値で初期化
     gConfig.imagePath = "bgimage.bmp";
-    //gConfig.meshWidth = 300;  �����Ǥ����ꤷ�ʤ�
-    //gConfig.meshHeight = 240; �����Ǥ����ꤷ�ʤ�
+    //gConfig.meshWidth = 300;  ここでは設定しない
+    //gConfig.meshHeight = 240; ここでは設定しない
     gConfig.virtualWidth = 300;
     gConfig.virtualHeight = 240;
     gConfig.windowWidth = 300;
@@ -159,7 +159,7 @@ void initProc(int argc, char **argv) {
     gConfig.isFullScreen = false;
     gConfig.isVerbose = false;
     
-    // ��������
+    // 引数解析
     switch(parseOption(&gConfig, argc, argv)) {
     case OPTPSR_SUCCESS:
         break;
@@ -171,7 +171,7 @@ void initProc(int argc, char **argv) {
         break;
     }
     
-    // ��Ĺ�⡼�ɻ� : �����ͤ�ɸ����Ϥ˽��Ϥ���
+    // 冗長モード時 : 設定値を標準出力に出力する
     if (gConfig.isVerbose) {
         printf("gConfig.imagePath: %s", gConfig.imagePath);
         printf("gConfig.meshWidth: %d", gConfig.meshWidth);
@@ -185,92 +185,92 @@ void initProc(int argc, char **argv) {
         printf("gConfig.scale: %f", gConfig.scale);
         //printf("gConfig.isFullScreen", gConfig.isFullScreen);
         //printf("gConfig.isVerbose", gConfig.isVerbose);
-        // SIMD̿��Υ����å�
+        // SIMD命令のチェック
         printf("CPUID: %s\n", CheckCPUID() ? "Supported" : "Not Supported");
         printf("SSE: %s\n", CheckSSE() ? "Supported" : "Not Supported");
         printf("SSE2: %s\n", CheckSSE2() ? "Supported" : "Not Supported");
         printf("EDX: %d\n", GetEDX());
     }
 
-    // CPUID������̥ǡ����򹹿�����ؿ������
+    // CPUIDから水面データを更新する関数を決定
     stepFunc = stepFPU;
     stepFunc = stepSSE;
 
-    // SDL��������ƥ����꡼�󥵡��ե��������
+    // SDL初期化してスクリーンサーフェスを取得
     initSDL();
     
-    // �طʲ����ɤ߹���
+    // 背景画像読み込み
     SDL_Surface *tmpBg = SDL_LoadBMP(gConfig.imagePath);
     if (tmpBg == NULL) {
-        // ���顼ɽ���򤷤ƽ�λ
+        // エラー表示をして終了
         fprintf(stderr, MSG_ERROR_LOAD_IMAGE, gConfig.imagePath);
         exit(EXIT_FAILURE);
     }
     
-    // �طʥ����ե����򥹥��꡼�󥵡��ե�����Ʊ���������Ѵ�
+    // 背景サーフェスをスクリーンサーフェスと同じ形式に変換
     tmpBg = SDL_ConvertSurface(tmpBg, gScreen->format, SDL_SWSURFACE);
     
-    // �ɤ߹�����طʤ򥦥���ɥ����礭���˹�碌��
+    // 読み込んだ背景をウィンドウの大きさに合わせる
     gImage = SDL_CreateRGBSurface(SDL_SWSURFACE,
             gConfig.windowWidth, gConfig.windowHeight, 32,
             0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
     scaleCopySurface(SM_BI_LINEAR, tmpBg, gImage);
     
-    // ���ۿ��̤�����4���ܿ���Ĵ������(for SSE)
+    // 仮想水面の幅を4の倍数に調整する(for SSE)
     gConfig.virtualWidth = 4 * ((gConfig.virtualWidth + 3) / 4);
 
-    // ��å���Υ����������
+    // メッシュのサイズを決定
     gConfig.meshWidth = hMargin + gConfig.virtualWidth + hMargin;
     gConfig.meshHeight = vMargin + gConfig.virtualHeight + vMargin;
 
-    // 16byte���饤�����(for SSE)�Τ����;ʬ�˳��ݤ���
+    // 16byteアラインメント(for SSE)のために余分に確保する
     int meshSize =  gConfig.meshWidth * gConfig.meshHeight;
     meshSize += 16 / sizeof(float);
 
-    // ���̥ǡ����������
+    // 水面データ配列作成
     uaPos = (float *)calloc(meshSize, sizeof(float));
     uaVel = (float *)calloc(meshSize, sizeof(float));
     uaForce = (float *)calloc(meshSize, sizeof(float));
 
-    // 16byte����(for SSE)��Ĵ�᤹��
+    // 16byte境界(for SSE)に調節する
     gPosition = (float *)((unsigned int)uaPos   + (16 - ((unsigned int)(uaPos + hMargin)   & 0xf)));
     gVelocity = (float *)((unsigned int)uaVel   + (16 - ((unsigned int)(uaVel + hMargin)   & 0xf)));
     gForce    = (float *)((unsigned int)uaForce + (16 - ((unsigned int)(uaForce + hMargin) & 0xf)));
 
-    // ����ǡ�������
+    // 波紋データ作成
     gRippleGeometry = createRippleData(gConfig.rippleRadius);
     
-    // ���ޥơ��֥�����
+    // 屈折テーブルを作成
     gRefractionTbl = createRefractionTable();
     
-    // ���ޥơ��֥륢����������ɬ�פʥ��ե��åȤ�û����Ƥ���
+    // 屈折テーブルアクセス時に必要なオフセットを加算しておく
 //    g_pRfraTbl += (gConfig.depthRes * (MaxWaterHeight - MinWaterHeight + 1)) - MinWaterHeight;
 }
 
 
-/* ���٥�Ƚ����ؿ� */
+/* イベント処理関数 */
 bool eventProc() {
     int topLimit = gConfig.rippleRadius;
     int bottomLimit = gConfig.windowHeight - gConfig.rippleRadius;
     int leftLimit = gConfig.rippleRadius;
     int rightLimit = gConfig.windowWidth - gConfig.rippleRadius;
-    bool exitFlag = false;    // ��λ�׵᤬ͭ�뤫�ݤ�
-    SDL_Event event;          // ���٥�Ȥ˴ؤ���������빽¤��(������?)
+    bool exitFlag = false;    // 終了要求が有るか否か
+    SDL_Event event;          // イベントに関する情報が入る構造体(共用体?)
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
-        case SDL_KEYDOWN: // ���������󥤥٥��
+        case SDL_KEYDOWN: // キーダウンイベント
             switch (event.key.keysym.sym) {
-            case SDLK_ESCAPE: // ��λ����(ESC, Q)
+            case SDLK_ESCAPE: // 終了キー(ESC, Q)
             case SDLK_q:
                 exitFlag = true;
                 break;
-            case SDLK_KP_PLUS: // +����
+            case SDLK_KP_PLUS: // +キー
             case SDLK_PLUS:
                 gConfig.rippleRadius += 4;
                 free(gRippleGeometry);
                 gRippleGeometry = createRippleData(gConfig.rippleRadius);
                 break;
-            case SDLK_KP_MINUS: // -����
+            case SDLK_KP_MINUS: // -キー
             case SDLK_MINUS:
                 gConfig.rippleRadius -= 4;
                 if (gConfig.rippleRadius < 0) {
@@ -279,33 +279,33 @@ bool eventProc() {
                 free(gRippleGeometry);
                 gRippleGeometry = createRippleData(gConfig.rippleRadius);
                 break;
-            default: // ����¾�Υ���(�ϥ�ɥ뤵��ʤ�����)
+            default: // その他のキー(ハンドルされないキー)
                 break;
             }
             break;
-        case SDL_MOUSEBUTTONDOWN: // �ޥ����ܥ�������󥤥٥��
-            // �ޥ����Υܥ��󤬲�����Ƥ����
+        case SDL_MOUSEBUTTONDOWN: // マウスボタンダウンイベント
+            // マウスのボタンが押されている時
             if (event.button.state == SDL_PRESSED) {
-                // ����ȯ����ǽ�ΰ�ˤ��뤫�ɤ���������å�
+                // 波紋発生可能領域にいるかどうかをチェック
                 if (leftLimit < event.button.x && event.button.x < rightLimit &&
                     topLimit < event.button.y && event.button.y < bottomLimit) {
-                    // �����ȯ��
+                    // 波紋を発生
                     rippleOut(event.button.x, event.button.y);
                 }
             }
             break;
-        case SDL_MOUSEMOTION: // �ޥ������������ư���٥��
-            // �ޥ����Υܥ��󤬲�����Ƥ����
+        case SDL_MOUSEMOTION: // マウスカーソル移動イベント
+            // マウスのボタンが押されている時
             if (event.motion.state == SDL_PRESSED) {
-                // ����ȯ����ǽ�ΰ�ˤ��뤫�ɤ���������å�
+                // 波紋発生可能領域にいるかどうかをチェック
                 if (leftLimit < event.motion.x && event.motion.x < rightLimit &&
                     topLimit < event.motion.y && event.motion.y < bottomLimit) {
-                    // �����ȯ��
+                    // 波紋を発生
                     rippleOut(event.motion.x, event.motion.y);
                 }
             }
             break;
-        case SDL_QUIT: // ��λ���٥��
+        case SDL_QUIT: // 終了イベント
             exitFlag = true;
             break;
         }
@@ -314,12 +314,12 @@ bool eventProc() {
 }
 
 
-/* �ץ�����ཪλ���θ���� */
+/* プログラム終了前の後始末 */
 void exitProc() {
-    // ���ޥơ��֥륢����������ɬ�פʥ��ե��åȤ򸺻����Ƥ���
+    // 屈折テーブルアクセス時に必要なオフセットを減算しておく
 //    g_pRfraTbl -= (-(MinWaterHeight - MaxWaterHeight) * (MaxWaterHeight - MinWaterHeight + 1)) - MinWaterHeight;
     
-    // ����β���
+    // メモリの解放
     SDL_FreeSurface(gImage);
     free(uaPos);
     free(uaVel);
@@ -327,50 +327,50 @@ void exitProc() {
     free(gRippleGeometry);
     free(gRefractionTbl);
     
-    // SDL��λ
+    // SDL終了
     SDL_Quit();
 }
 
-/* SDL������ؿ� */
+/* SDL初期化関数 */
 void initSDL() {
-    // SDL������
+    // SDLを初期化
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-        // ���顼ɽ���򤷤ƽ�λ
+        // エラー表示をして終了
         fprintf(stderr, MSG_ERROR_INIT_SDL, SDL_GetError());
         exit(EXIT_FAILURE);
     }
     
-    // �ǥ����ץ쥤�ǥХ����ν�����ե饰������
+    // ディスプレイデバイスの初期化フラグを設定
     Uint32 screenFlags = SDL_SWSURFACE;
     if (gConfig.isFullScreen) {
         screenFlags |= SDL_FULLSCREEN;
     }
     
-    // �ǥ����ץ쥤�ǥХ���������
+    // ディスプレイデバイスを初期化
     gScreen = SDL_SetVideoMode(gConfig.windowWidth, gConfig.windowHeight,
                                  32, screenFlags);
     
-    // ������˼��Ԥ����顢���顼��å�������ɽ�����ƽ�λ
+    // 初期化に失敗したら、エラーメッセージを表示して終了
     if (gScreen == NULL) {
-        // ���顼ɽ���򤷤ƽ�λ
+        // エラー表示をして終了
         fprintf(stderr, MSG_ERROR_INIT_VIDEO, SDL_GetError());
         SDL_Quit();
         exit(EXIT_FAILURE);
     }
 }
 
-/* ����ǡ��������ؿ� */
+/* 波紋データ作成関数 */
 float *createRippleData(int radius) {
-    // ����ǡ�������
+    // 波紋データ作成
     float *rippleData = calloc((radius + 1 + radius) * (radius + 1 + radius), sizeof(float));
     float *pData = rippleData;
     for (int y = -radius; y <= radius; y++) {
         for (int x = -radius; x <= radius; x++) {
-            // x = 0, y = 0���濴�Ȥ���
-            // �濴����ε�Υ���������
+            // x = 0, y = 0を中心とする
+            // 中心からの距離の二乗を求める
             int r2 = (x * x) + (y * y);
             if (r2 < radius * radius) {
-                // ����
+                // 円内
                 double t = PI * (sqrt(r2) / radius);
                 *pData = (float)(100 * (cos(t) + 1));
             }
@@ -381,44 +381,44 @@ float *createRippleData(int radius) {
 }
 
 
-/* ���ޥơ��֥�����ؿ� */
+/* 屈折テーブル作成関数 */
 Uint16 *createRefractionTable() {
 /*
-    // 512��ǥե���Ȥ�ʬ��ǽ�Ȥ���ȡ�
-    // ��������ʬ��ǽ��p�ܤˤʤ�ȡ�����ι⤵��p�ܤˤʤ�
-    // �����ǥԥ����������p�ܤˤ��ʤ��ȡ�p�ܽ�Ĺ������ˤʤäƤ��ޤ���
-    // ����ǤϺ���Τǡ��ԥ����������p�ܤ��롣
-    // �����ޤǤǡ�����Ū��p�ܤΥ�������Ƿ׻��������ˤʤ롣
-    // �����ǡ����Ф��������1/p�ܤ��롣
+    // 512をデフォルトの分解能とすると、
+    // 縦方向の分解能がp倍になると、波紋の高さもp倍になる
+    // ここでピクセルの幅をp倍にしないと、p倍縦長の波紋になってしまう。
+    // それでは困るので、ピクセルの幅をp倍する。
+    // ここまでで、仮想的にp倍のスケールで計算した事になる。
+    // そこで、算出したずれを1/p倍する。
     const double p = gConfig.depthRes / 512.0;
     
-    // 8��ǥե���Ȥ�Ⱦ�¤Ȥ���ȡ�
-    // �����Ⱦ�¤�q�ܤˤʤ�ȡ�����ι⤵�Ϥ��ΤޤޤʤΤǡ�
-    // q�ܲ�Ĺ������ˤʤäƤ��ޤ���
-    // �����ǡ�����ι⤵��q�ܤ��롣
-    // ���Τޤ޷׻�����ȡ�q�ܤΥ�������Ƿ׻��������ˤʤ롣
-    // ��äơ����Ф��������1/q�ܤ��롣
+    // 8をデフォルトの半径とすると、
+    // 波紋の半径がq倍になると、波紋の高さはそのままなので、
+    // q倍横長の波紋になってしまう。
+    // そこで、波紋の高さをq倍する。
+    // このまま計算すると、q倍のスケールで計算した事になる。
+    // よって、算出したずれを1/q倍する。
     const double q = gConfig.rippleRadius / 8.0;
 */    
-    const double PIXEL_WIDTH = 1.0;     // �ԥ��������
-    const double REFRACTION_INDEX = 1.33;    // ������ж���Ψ
+    const double PIXEL_WIDTH = 1.0;     // ピクセルの幅
+    const double REFRACTION_INDEX = 1.33;    // 水の絶対屈折率
 
-    // �ơ��֥��ѥ�������(��������̢�gConfig.depthRes^2 * 2byte(16bit))
-    // ����ϡ����̤ι⤵�ȡ����Υԥ�����κ����ޤ��Ͼ岼�ι��㺹�˱ƶ������
+    // テーブル用メモリを確保(メモリ使用量≒gConfig.depthRes^2 * 2byte(16bit))
+    // ずれは、水面の高さと、そのピクセルの左右または上下の高低差に影響される
     // Left < Right
     Uint16 *refractionTable = calloc(10000, sizeof(Uint16));
     
-    // �׻�����
+    // 計算開始
     int i = 0, d = 100 / 10;
     for (int heightDiff = 0; heightDiff < 100; heightDiff++) {
-        // ���ͳѤ����
+        // 入射角を求める
         double t1 = atan((heightDiff * 100.0 / (100 / 2.0)) / (2.0 * PIXEL_WIDTH));
         
-        // ���޳Ѥ����
+        // 屈折角を求める
         double t2 = asin(sin(t1) / REFRACTION_INDEX);
         
-        // �ƿ��̤ι⤵�˱�����������̤����
-        // ����ϡ����̤ι⤵�ȡ����Υԥ�����κ����ޤ��Ͼ岼�ι��㺹�˱ƶ������
+        // 各水面の高さに応じたずれの量を求める
+        // ずれは、水面の高さと、そのピクセルの左右または上下の高低差に影響される
         for (int height = 0; height < 100; height++) {
             int index = 100 * heightDiff + height;
             double delta = (height * 100.0 / (100 / 2.0)) * tan(t1 - t2);
@@ -432,22 +432,22 @@ Uint16 *createRefractionTable() {
         }
     }
     
-    // �ơ��֥�ؤΥݥ��󥿤��֤�
+    // テーブルへのポインタを返す
     return refractionTable;
 }
 
-/* ����ȯ���ؿ� */
+/* 波紋発生関数 */
 void rippleOut(int x, int y) {
     float *position = gPosition;
     float *velocity = gVelocity;
-    // �ȥǡ����κ�����ˤ�������֤˰�ư
+    // 波データの左上隅にあたる位置に移動
     int incValue = gConfig.meshWidth * ((y + vMargin) - gConfig.rippleRadius) +
                                        ((x + hMargin) - gConfig.rippleRadius);
     position += incValue;
     velocity += incValue;
     //float *riplData = gRippleGeometry;
     
-    // �����ȯ��������
+    // 波紋を発生させる
     incValue = gConfig.meshWidth - (2 * gConfig.rippleRadius + 1);
     for (int y = -gConfig.rippleRadius; y <= gConfig.rippleRadius; y++) {
         for (int x = -gConfig.rippleRadius; x <= gConfig.rippleRadius; x++) {
@@ -455,32 +455,32 @@ void rippleOut(int x, int y) {
             if (t < gConfig.rippleRadius) {
                 *position += 1 * (cos(PI * t / gConfig.rippleRadius) + 1.0);
             }
-            // �ݥ��󥿤�ʤ��
+            // ポインタを進める
             position++;
             velocity++;
         }
-        // ���˽񤭤���Ԥ�Ƭ�˰�ư
+        // 次に書きこむ行の頭に移動
         position += incValue;
         velocity += incValue;
     }
 }
 
 
-/* ��������ؿ� */
+/* 水面描画関数 */
 void paintToSurface(SDL_Surface *target) {
-    // �����꡼�󥵡��ե�������å�
+    // スクリーンサーフェスをロック
     SDL_LockSurface(target);
     SDL_LockSurface(gImage);
-    // �ǽ�Υԥ�����ذ�ư
+    // 最初のピクセルへ移動
     float *waterData = gPosition;
     waterData += gConfig.meshWidth + hMargin;
-    // �ǽ�ιԤؤΥݥ��󥿤ǽ����
+    // 最初の行へのポインタで初期化
     Uint32 *scrLine = (Uint32 *)target->pixels;
     Uint32 *bgLine = (Uint32 *)gImage->pixels;
-    // �ԥå������
+    // ピッチを取得
     Uint32 scrPitch = target->pitch / sizeof(Uint32);
     Uint32 bgPitch = gImage->pitch / sizeof(Uint32);
-    // ����(x,y�ϥ����꡼�󥵡��ե�����ΰ���)
+    // 描画(x,yはスクリーンサーフェス上の位置)
     for (int y = 0; y < gConfig.windowHeight; y++) {
         for (int x = 0; x < gConfig.windowWidth; x++) {
 #if 0
@@ -500,7 +500,7 @@ void paintToSurface(SDL_Surface *target) {
             } else {
                 dy = -waterData[y] * tan(atan(-dhy / (2 * pw)) - asin(sin(atan(-dhy / (2 * pw))) / ri));
             }
-            // Ŭ���ϰϤˤʤ�褦�˽���
+            // 適正範囲になるように修正
             if (x + dx < 0) {
                 dx = -x;
             } else if (x + dx >= gConfig.windowWidth) {
@@ -518,13 +518,13 @@ void paintToSurface(SDL_Surface *target) {
             scrLine[x] = c << 16 | c << 8 | c;
 #endif
         }
-        // ���ιԤ˥ݥ��󥿤�ʤ��
+        // 次の行にポインタを進める
         scrLine += scrPitch;
         bgLine += bgPitch;
         waterData += gConfig.meshWidth;
     }
 
-    // �����꡼�󥵡��ե����Υ��å�����
+    // スクリーンサーフェスのロックを解除
     SDL_UnlockSurface(gImage);
     SDL_UnlockSurface(target);
 }

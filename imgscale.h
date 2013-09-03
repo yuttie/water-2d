@@ -9,7 +9,7 @@
 
 #ifndef __IMGSCALE_H
 #define __IMGSCALE_H
-/* Îóµó·¿ */
+/* åˆ—æŒ™åž‹ */
 typedef enum __ScalingMethod {
     SM_SIMPLE,
     SM_BI_LINEAR

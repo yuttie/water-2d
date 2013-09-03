@@ -17,18 +17,18 @@
 
 /* Type Definition */
 typedef struct __Config {
-    char  *imagePath;      // ╟╪╖╩едесб╝е╕д╬е╒ебедеы╠╛
-    int    meshWidth;      // есе├е╖ех(╝┬║▌д╬е╟б╝е┐╬є)д╬╔¤
-    int    meshHeight;     // есе├е╖ех(╝┬║▌д╬е╟б╝е┐╬є)д╬╣тд╡
-    int    virtualWidth;   // ╣═дид╞ддды▓╛┴█┐х╠╠д╬╔¤
-    int    virtualHeight;  // ╣═дид╞ддды▓╛┴█┐х╠╠д╬╣тд╡
-    int    windowWidth;    // ╔╜╝ид╣ды(ежегеєе╔еж)д╬╔¤
-    int    windowHeight;   // ╔╜╝ид╣ды(ежегеєе╔еж)д╬╣тд╡
-    int    rippleRadius;   // ╚п└╕д╡д╗ды╟╚╠цд╬╚╛╖┬
-    float  attRate;        // ╕║┐ъ╬и
-    float  scale;          // │╚┬ч╬и(ежегеєе╔еже╡еде║/▓╛┴█е╡еде║)
-    bool   isFullScreen;   // е╒еые╣епеъб╝еєдл╚▌дл
-    bool   isVerbose;      // ╛▄║┘дЄ╜╨╬╧д╣дыдл
+    char  *imagePath;      // шГМцЩпуВдуГбуГ╝уВ╕уБоуГХуВбуВдуГлхРН
+    int    meshWidth;      // уГбуГГуВ╖уГе(хоЯщЪЫуБоуГЗуГ╝уВ┐хИЧ)уБох╣Е
+    int    meshHeight;     // уГбуГГуВ╖уГе(хоЯщЪЫуБоуГЗуГ╝уВ┐хИЧ)уБощлШуБХ
+    int    virtualWidth;   // шАГуБИуБжуБДуВЛф╗оцГ│ц░┤щЭвуБох╣Е
+    int    virtualHeight;  // шАГуБИуБжуБДуВЛф╗оцГ│ц░┤щЭвуБощлШуБХ
+    int    windowWidth;    // шбичд║уБЩуВЛ(уВжуВгуГ│уГЙуВж)уБох╣Е
+    int    windowHeight;   // шбичд║уБЩуВЛ(уВжуВгуГ│уГЙуВж)уБощлШуБХ
+    int    rippleRadius;   // чЩ║чФЯуБХуБЫуВЛц│вч┤ЛуБохНКх╛Д
+    float  attRate;        // ц╕Ышб░чОЗ
+    float  scale;          // цЛбхдзчОЗ(уВжуВгуГ│уГЙуВжуВ╡уВдуВ║/ф╗оцГ│уВ╡уВдуВ║)
+    bool   isFullScreen;   // уГХуГлуВ╣уВпуГкуГ╝уГ│уБЛхРжуБЛ
+    bool   isVerbose;      // шй│ч┤░уВТхЗ║хКЫуБЩуВЛуБЛ
 } Config;
 
 /* Constant */

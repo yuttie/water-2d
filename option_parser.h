@@ -17,7 +17,7 @@ typedef enum __ParseResult {
     OPTPSR_FAILED
 } ParseResult;
 
-/* µ¯Æ°»ş°ú¿ô²òÀÏ´Ø¿ô */
+/* èµ·å‹•æ™‚å¼•æ•°è§£æé–¢æ•° */
 ParseResult parseOption(Config *config, int argc, char **argv);
 #endif
 

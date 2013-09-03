@@ -16,7 +16,7 @@
 void stepFPU(float dt) {
     float m = 1;
     float k = 1;
-    // °ÌÃÖ¤ÈÂ®ÅÙ¤Î°ìÉô¤ò¹¹¿·
+    // ä½ç½®ã¨é€Ÿåº¦ã®ä¸€éƒ¨ã‚’æ›´æ–°
     for (int y = vMargin; y < vMargin + gConfig.virtualHeight; y++) {
         for (int x = hMargin; x < hMargin + gConfig.virtualWidth; x++) {
             int offset = gConfig.meshWidth * y + x;
@@ -25,7 +25,7 @@ void stepFPU(float dt) {
             gVelocity[offset] += gForce[offset] * dt / (2 * m);
         }
     }
-    // ¿·¤·¤¤ÎÏ¤òµá¤á¤ë
+    // æ–°ã—ã„åŠ›ã‚’æ±‚ã‚ã‚‹
     for (int y = vMargin; y < vMargin + gConfig.virtualHeight; y++) {
         for (int x = hMargin; x < hMargin + gConfig.virtualWidth; x++) {
             int offset = gConfig.meshWidth * y + x;
@@ -35,7 +35,7 @@ void stepFPU(float dt) {
             gForce[offset] += -k * (gPosition[offset] - gPosition[offset + gConfig.meshWidth]);
         }
     }
-    // Â®ÅÙ¤Î°ìÉô¤ò¹¹¿·
+    // é€Ÿåº¦ã®ä¸€éƒ¨ã‚’æ›´æ–°
     for (int y = vMargin; y < vMargin + gConfig.virtualHeight; y++) {
         for (int x = hMargin; x < hMargin + gConfig.virtualWidth; x++) {
             int offset = gConfig.meshWidth * y + x;

@@ -8,7 +8,7 @@
  **************************************************************************
 */
 
-/* ���󥯥롼�ɥե����� */
+/* インクルードファイル */
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -18,28 +18,28 @@
 #include "imgscale.h"
 
 
-/* SDL�����ե����ѥ��᡼������̾��ؿ� */
+/* SDLサーフェス用イメージ拡大縮小関数 */
 void scaleCopySurface(ScalingMethod method, SDL_Surface *srcSurface, SDL_Surface *desSurface) {
-    // �ƥ����ե��������ȹ⤵
+    // 各サーフェスの幅と高さ
     Uint32 desWidth = desSurface->w;
     Uint32 desHeight = desSurface->h;
     Uint32 srcWidth = srcSurface->w;
     Uint32 srcHeight = srcSurface->h;
-    // �����꡼�󥵡��ե�������å�
+    // スクリーンサーフェスをロック
     SDL_LockSurface(srcSurface);
     SDL_LockSurface(desSurface);
-    // �ǽ�ιԤؤΥݥ��󥿤ǽ����
+    // 最初の行へのポインタで初期化
     Uint32 *srcLine = (Uint32 *)srcSurface->pixels;
     Uint32 *desLine = (Uint32 *)desSurface->pixels;
-    // �ԥå������
+    // ピッチを取得
     int srcPitch = srcSurface->pitch / sizeof(Uint32);
     int desPitch = desSurface->pitch / sizeof(Uint32);
-    // �ԥ������ؤ��ݥ���
+    // ピクセルを指すポインタ
     Uint32 *desPixel;
     Uint32 *srcPixel;
-    // ���르�ꥺ��μ����ʬ��
+    // アルゴリズムの種類で分岐
     switch (method) {
-        case SM_SIMPLE: {   // ����ץ����ˡ with Bresenham(��ɸ���Ѵ����ƾ������ʲ����ڼΤ�)
+        case SM_SIMPLE: {   // シンプルな方法 with Bresenham(座標を変換して小数点以下を切捨て)
             int ex = 0, ey = 0;
             for (Uint32 y = 0; y < desHeight; y++) {
                 srcPixel = srcLine;
@@ -62,16 +62,16 @@ void scaleCopySurface(ScalingMethod method, SDL_Surface *srcSurface, SDL_Surface
             }
             break;
         }
-        case SM_BI_LINEAR: {   // ���������ˡ
-            /* �����������ե�������б�������(vx,vy)��Ϥ�Ǥ⾮������������4ĺ��
-             * pix00(����), pix10(����), pix01(����), pix11(����)
-             * ����դȲ������� u:(1-u) ����ʬ�������ˡ�����2�Ĥ���ʬ��P,Q�������ʬPQ��� v:(1-v) ����ʬ����
-             * ���ʤߤˡ�srcLine�����Ѥǡ������������ե����κǽ������ؤ��Ƥ���
+        case SM_BI_LINEAR: {   // 双線形補間法
+            /* ソースサーフェス上の対応する点(vx,vy)を囲む最も小さい正方形の4頂点
+             * pix00(左上), pix10(右上), pix01(左下), pix11(右下)
+             * 上の辺と下の点を u:(1-u) に内分し、次に、その2つの内分点P,Qを結んだ線分PQ上で v:(1-v) に内分する
+             * ちなみに、srcLineは不変で、ソースサーフェスの最初の点を指している
              */
             double xScale = (double)srcWidth / desWidth;
             double yScale = (double)srcHeight / desHeight;
-            double vy = 0;    // �����������ե�������б�����Y��ɸ
-            double vx = 0;    // �����������ե�������б�����X��ɸ
+            double vy = 0;    // ソースサーフェス上の対応するY座標
+            double vx = 0;    // ソースサーフェス上の対応するX座標
             for (int y = 0; y < desHeight; y++) {
                 desPixel = desLine;
                 vy += yScale;
@@ -102,7 +102,7 @@ void scaleCopySurface(ScalingMethod method, SDL_Surface *srcSurface, SDL_Surface
             break;
         }
     }
-    // �����ե����򥢥���å�
+    // サーフェスをアンロック
     SDL_UnlockSurface(srcSurface);
     SDL_UnlockSurface(desSurface);
 }
