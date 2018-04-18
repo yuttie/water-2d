@@ -129,8 +129,8 @@ int main(int argc, char **argv) {
             double fps = frameCount * 1000.0 / (endTick - startTick);
             if (fps > maxFps) maxFps = fps;
             // ウィンドウキャプションに表示するための文字列を作成
-            char cap[16];
-            sprintf(cap, "FPS:%#.2f(Max:%#.2f)", fps, maxFps);
+            char cap[1024];
+            snprintf(cap, sizeof(cap), "FPS:%#.2f(Max:%#.2f)", fps, maxFps);
             // 文字列をウィンドウキャプションに設定
             SDL_WM_SetCaption(cap, NULL);
             // スタート時刻・フレーム数のリセット
