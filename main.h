@@ -47,11 +47,11 @@ extern SDL_Surface *gImage;
 extern void (*stepFunc)(float dt);
 
 /* TextData */
-extern const char const *MSG_ERROR_INVALID_OPTION;
-extern const char const *MSG_ERROR_LOAD_IMAGE;
-extern const char const *MSG_ERROR_INIT_SDL;
-extern const char const *MSG_ERROR_INIT_VIDEO;
-extern const char const *MSG_HELP;
+extern const char * const MSG_ERROR_INVALID_OPTION;
+extern const char * const MSG_ERROR_LOAD_IMAGE;
+extern const char * const MSG_ERROR_INIT_SDL;
+extern const char * const MSG_ERROR_INIT_VIDEO;
+extern const char * const MSG_HELP;
 
 /* Function Prototype Declaration */
 int main(int argc, char **argv);

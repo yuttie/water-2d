@@ -65,15 +65,15 @@ const int hMargin = 2;
 const int vMargin = 1;
 
 /* TextData */
-const char const *MSG_ERROR_INVALID_OPTION =
+const char * const MSG_ERROR_INVALID_OPTION =
     "ERROR: Invalid option '%s' was specified.\n";
-const char const *MSG_ERROR_LOAD_IMAGE =
+const char * const MSG_ERROR_LOAD_IMAGE =
     "ERROR: Can't load image '%s'.\n";
-const char const *MSG_ERROR_INIT_SDL =
+const char * const MSG_ERROR_INIT_SDL =
     "ERROR: Initialization of SDL failed : %s\n";
-const char const *MSG_ERROR_INIT_VIDEO =
+const char * const MSG_ERROR_INIT_VIDEO =
     "ERROR: Initialization of video failed: %s\n";
-const char const *MSG_HELP =
+const char * const MSG_HELP =
     "<usage>\n"
     "    water [option]\n"
     "<Options>\n"
